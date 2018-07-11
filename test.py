@@ -18,7 +18,6 @@ def times(y, sr, hop):
 
 
 def get_error(y, y_ref):
-    #TODO: Implement % error equation
     if len(y) != len(y_ref):
         warnings.warn('y ({}) and y_ref ({}) must be equal in length'.format(\
                 len(y), len(y_ref)))
@@ -27,20 +26,18 @@ def get_error(y, y_ref):
     else:
         return '~' + str(round(np.mean(y - y_ref), 4)) + ' dB'
 
-#TODO: FIX plot_peaks
-def plot_peaks(y, peaks, sub):
-    for pk in peaks:
-        plt.subplot(sub)
-        plt.plot(pk, y[pk], 'o')
+def plot_peaks(y, peaks, times, sub):
+    plt.subplot(sub)
+    plt.vlines(times[peaks], ymin=0, ymax=np.max(y) + 1, colors='r')
 
 
 def plot_onset_env():
-    my_env = spec.hist_onset
+    rt_env = spec.hist_onset
     rosa_env = librosa.onset.onset_strength(y=spec.hist_y, sr=spec.sr)
-    t_my = times(spec.hist_onset, spec.sr, spec.hop)
+    t_rt = times(spec.hist_onset, spec.sr, spec.hop)
     t_rosa = times(rosa_env, spec.sr, spec.hop)
 
-    error = get_error(my_env, rosa_env)
+    error = get_error(rt_env, rosa_env)
 
     plt.suptitle('Librosa vs Custom Real Time Onset Detection')
     plt.subplots_adjust(hspace=.5)
@@ -57,10 +54,9 @@ def plot_onset_env():
     plt.title('Real Time Onset Envelope (Error: {})'.format(error))
     plt.xlabel('Time (s)')
     plt.ylabel('Power (dB)')
-    plt.plot(t_my, my_env)
+    plt.plot(t_rt, rt_env)
 
-    #TODO: FIX plot_peaks
-    # plot_peaks(my_env, peaks, 212)
+    plot_peaks(rt_env, peaks, t_rt, 212)
 
     plt.show()
 
@@ -76,12 +72,11 @@ def listen(time=None):
                     peaks.append(count)
                 count += 1
         except KeyboardInterrupt:
-            pass
+            spec.stop()
 
-    print('Recording haulted. ' +
-                    'Total recording time: {}s'.format(round(\
-                    get_rec_time(
-                            spec.hist_onset,
-                            spec.sr,
-                            spec.hop), 2)))
+    print('Recording haulted. Total recording time: {}s'\
+            .format(round(get_rec_time(
+                                    spec.hist_onset,
+                                    spec.sr,
+                                    spec.hop), 2)))
     plot_onset_env()

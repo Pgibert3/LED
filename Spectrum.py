@@ -33,7 +33,8 @@ class Spectrum:
         try:
             self.p
         except AttributeError:
-            warnings.warn('No audio stream detected. Consider calling Spectrum.start()')
+            warnings.warn('No audio stream detected.' +
+                            ' Consider calling Spectrum.start()')
             return
 
         self.stream.stop_stream()
@@ -57,7 +58,7 @@ class Spectrum:
         window = np.hanning(len(y))
         S = np.fft.fft(y * window)
         frst_half = int(len(S)//2 + 1)
-        S = np.abs(S[:frst_half])**2
+        S = np.abs(S[:frst_half]/len(S))**2
         mel_basis = util.mel(sr=self.sr, n_fft=self.frame_size, n_mels=n_mels)
 
         return np.dot(mel_basis, S)
@@ -79,14 +80,13 @@ class Spectrum:
         onset = self.aggregate(onset, 1, 0)
         return onset, S
 
-
-    def is_peak(self, onset, hist=30, wait=5, c=2.0):
+    #TODO: is_peak() needs further tuning
+    def is_peak(self, onset, hist=10, wait=5, c=2.0):
         if len(self.hist_onset) + 1 < hist:
             return False
         else:
-            prev = self.hist_onset[-(len(self.hist_onset)//3 + 1):-1]
-            prev_max = np.max(prev)
-            prev_avg = np.mean(prev)
+            prev_max = np.max(self.hist_onset[-(hist//3):-1])
+            prev_avg = np.mean(self.hist_onset[-(hist):-1])
 
             if self.pk_delay > 0:
                 self.pk_delay -=1
