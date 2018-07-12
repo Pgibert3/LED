@@ -8,6 +8,7 @@ numpy = "*"
 matplotlib = "*"
 pyaudio = "*"
 librosa = "*"
+setuptools = "*"
 
 [dev-packages]
 
