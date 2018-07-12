@@ -24,7 +24,7 @@ def get_error(y, y_ref):
         return '??'
 
     else:
-        return '~' + str(round(np.mean(y - y_ref), 4)) + ' dB'
+        return '~' + str(round(np.mean(np.abs(y - y_ref)), 4)) + ' dB'
 
 def plot_peaks(y, peaks, times, sub):
     plt.subplot(sub)
