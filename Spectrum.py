@@ -2,10 +2,11 @@ import numpy as np
 import warnings
 import pyaudio
 from librosa_z import util
-import pdb
+import time
 
 class Spectrum:
-    def __init__(self, sr=22050, frame_size=2048, hop=512):
+    def __init__(self, conn, sr=22050, frame_size=2048, hop=512):
+        self.conn = conn
         self.sr = sr
         self.frame_size = frame_size
         self.hop = hop
@@ -27,6 +28,7 @@ class Spectrum:
                 rate = self.sr,
                 input = True,
                 frames_per_buffer = self.hop)
+        self.run_onset_detection()
 
 
     def stop(self):
@@ -100,21 +102,23 @@ class Spectrum:
         return self.hist_onset[-1]
 
 
-    def read_onset(self):
-        try:
-            y = np.fromstring(self.stream.read(self.hop, exception_on_overflow=False), dtype=np.float32)
-        except AttributeError:
-            warnings.warn('No audio stream detected. Consider calling Spectrum.start()')
-            return
+    def run_onset_detection(self, delay=.001):
+		While True:
+			try:
+				y = np.fromstring(self.stream.read(self.hop, exception_on_overflow=False), dtype=np.float32)
+			except AttributeError:
+				warnings.warn('No audio stream detected. Consider calling Spectrum.start()')
+				return
 
-        self.update_yb(y)
-        onset, self.S_ref = self.onset_strength(self.yb)
-        self.append_hist_y(y)
+			self.update_yb(y)
+			onset, self.S_ref = self.onset_strength(self.yb)
+			self.append_hist_y(y)
 
-        if self.start_delay > 0:
-            self.append_hist_onset(0)
-            self.start_delay -=1
-        else:
-            self.append_hist_onset(onset)
+			if self.start_delay > 0:
+				self.append_hist_onset(0)
+				self.start_delay -=1
+			else:
+				self.append_hist_onset(onset)
 
-        return self.is_peak(onset)
+			self.conn.send(self.is_peak(onset))
+			time.sleep(delay)
