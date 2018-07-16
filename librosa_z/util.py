@@ -2,6 +2,7 @@ import numpy as np
 import warnings
 from . import exceptions
 import six
+from scipy.ndimage import median_filter
 
 '''included methods:
         power_to_db,
@@ -24,6 +25,9 @@ import six
         frame,
         autocorrelate,
         tempo_frequencies
+        hpss
+        softmask
+        magphase
 '''
 
 def power_to_db(S, ref=1.0, amin=1e-10, top_db=80.0):
@@ -1312,3 +1316,372 @@ def tempo_frequencies(n_bins, hop_length=512, sr=22050):
     bin_frequencies[1:] = 60.0 * sr / (hop_length * np.arange(1.0, n_bins))
 
     return bin_frequencies
+
+
+def hpss(S, kernel_size=31, power=2.0, mask=False, margin=1.0):
+"""Median-filtering harmonic percussive source separation (HPSS).
+
+If `margin = 1.0`, decomposes an input spectrogram `S = H + P`
+where `H` contains the harmonic components,
+and `P` contains the percussive components.
+
+If `margin > 1.0`, decomposes an input spectrogram `S = H + P + R`
+where `R` contains residual components not included in `H` or `P`.
+
+This implementation is based upon the algorithm described by [1]_ and [2]_.
+
+.. [1] Fitzgerald, Derry.
+    "Harmonic/percussive separation using median filtering."
+    13th International Conference on Digital Audio Effects (DAFX10),
+    Graz, Austria, 2010.
+
+.. [2] Driedger, Müller, Disch.
+    "Extending harmonic-percussive separation of audio."
+    15th International Society for Music Information Retrieval Conference (ISMIR 2014),
+    Taipei, Taiwan, 2014.
+
+Parameters
+----------
+S : np.ndarray [shape=(d, n)]
+    input spectrogram. May be real (magnitude) or complex.
+
+kernel_size : int or tuple (kernel_harmonic, kernel_percussive)
+    kernel size(s) for the median filters.
+
+    - If scalar, the same size is used for both harmonic and percussive.
+    - If tuple, the first value specifies the width of the
+      harmonic filter, and the second value specifies the width
+      of the percussive filter.
+
+power : float > 0 [scalar]
+    Exponent for the Wiener filter when constructing soft mask matrices.
+
+mask : bool
+    Return the masking matrices instead of components.
+
+    Masking matrices contain non-negative real values that
+    can be used to measure the assignment of energy from `S`
+    into harmonic or percussive components.
+
+    Components can be recovered by multiplying `S * mask_H`
+    or `S * mask_P`.
+
+
+margin : float or tuple (margin_harmonic, margin_percussive)
+    margin size(s) for the masks (as described in [2]_)
+
+    - If scalar, the same size is used for both harmonic and percussive.
+    - If tuple, the first value specifies the margin of the
+      harmonic mask, and the second value specifies the margin
+      of the percussive mask.
+
+Returns
+-------
+harmonic : np.ndarray [shape=(d, n)]
+    harmonic component (or mask)
+
+percussive : np.ndarray [shape=(d, n)]
+    percussive component (or mask)
+
+
+See Also
+--------
+util.softmask
+
+Notes
+-----
+This function caches at level 30.
+
+Examples
+--------
+Separate into harmonic and percussive
+
+>>> y, sr = librosa.load(librosa.util.example_audio_file(), duration=15)
+>>> D = librosa.stft(y)
+>>> H, P = librosa.decompose.hpss(D)
+
+>>> import matplotlib.pyplot as plt
+>>> plt.figure()
+>>> plt.subplot(3, 1, 1)
+>>> librosa.display.specshow(librosa.amplitude_to_db(D,
+...                                                  ref=np.max),
+...                          y_axis='log')
+>>> plt.colorbar(format='%+2.0f dB')
+>>> plt.title('Full power spectrogram')
+>>> plt.subplot(3, 1, 2)
+>>> librosa.display.specshow(librosa.amplitude_to_db(H,
+...                                                  ref=np.max),
+...                          y_axis='log')
+>>> plt.colorbar(format='%+2.0f dB')
+>>> plt.title('Harmonic power spectrogram')
+>>> plt.subplot(3, 1, 3)
+>>> librosa.display.specshow(librosa.amplitude_to_db(P,
+...                                                  ref=np.max),
+...                          y_axis='log')
+>>> plt.colorbar(format='%+2.0f dB')
+>>> plt.title('Percussive power spectrogram')
+>>> plt.tight_layout()
+
+
+Or with a narrower horizontal filter
+
+>>> H, P = librosa.decompose.hpss(D, kernel_size=(13, 31))
+
+Just get harmonic/percussive masks, not the spectra
+
+>>> mask_H, mask_P = librosa.decompose.hpss(D, mask=True)
+>>> mask_H
+array([[  1.000e+00,   1.469e-01, ...,   2.648e-03,   2.164e-03],
+       [  1.000e+00,   2.368e-01, ...,   9.413e-03,   7.703e-03],
+       ...,
+       [  8.869e-01,   5.673e-02, ...,   4.603e-02,   1.247e-05],
+       [  7.068e-01,   2.194e-02, ...,   4.453e-02,   1.205e-05]], dtype=float32)
+>>> mask_P
+array([[  2.858e-05,   8.531e-01, ...,   9.974e-01,   9.978e-01],
+       [  1.586e-05,   7.632e-01, ...,   9.906e-01,   9.923e-01],
+       ...,
+       [  1.131e-01,   9.433e-01, ...,   9.540e-01,   1.000e+00],
+       [  2.932e-01,   9.781e-01, ...,   9.555e-01,   1.000e+00]], dtype=float32)
+
+Separate into harmonic/percussive/residual components by using a margin > 1.0
+
+>>> H, P = librosa.decompose.hpss(D, margin=3.0)
+>>> R = D - (H+P)
+>>> y_harm = librosa.core.istft(H)
+>>> y_perc = librosa.core.istft(P)
+>>> y_resi = librosa.core.istft(R)
+
+
+Get a more isolated percussive component by widening its margin
+
+>>> H, P = librosa.decompose.hpss(D, margin=(1.0,5.0))
+
+"""
+
+if np.iscomplexobj(S):
+    S, phase = magphase(S)
+else:
+    phase = 1
+
+if np.isscalar(kernel_size):
+    win_harm = kernel_size
+    win_perc = kernel_size
+else:
+    win_harm = kernel_size[0]
+    win_perc = kernel_size[1]
+
+if np.isscalar(margin):
+    margin_harm = margin
+    margin_perc = margin
+else:
+    margin_harm = margin[0]
+    margin_perc = margin[1]
+
+# margin minimum is 1.0
+if margin_harm < 1 or margin_perc < 1:
+    raise ParameterError("Margins must be >= 1.0. "
+                         "A typical range is between 1 and 10.")
+
+# Compute median filters. Pre-allocation here preserves memory layout.
+harm = np.empty_like(S)
+harm[:] = median_filter(S, size=(1, win_harm), mode='reflect')
+
+perc = np.empty_like(S)
+perc[:] = median_filter(S, size=(win_perc, 1), mode='reflect')
+
+split_zeros = (margin_harm == 1 and margin_perc == 1)
+
+mask_harm = softmask(harm, perc * margin_harm,
+                          power=power,
+                          split_zeros=split_zeros)
+
+mask_perc = softmask(perc, harm * margin_perc,
+                          power=power,
+                          split_zeros=split_zeros)
+
+if mask:
+    return mask_harm, mask_perc
+
+return ((S * mask_harm) * phase, (S * mask_perc) * phase)
+
+
+def softmask(X, X_ref, power=1, split_zeros=False):
+    '''Robustly compute a softmask operation.
+
+        `M = X**power / (X**power + X_ref**power)`
+
+
+    Parameters
+    ----------
+    X : np.ndarray
+        The (non-negative) input array corresponding to the positive mask elements
+
+    X_ref : np.ndarray
+        The (non-negative) array of reference or background elements.
+        Must have the same shape as `X`.
+
+    power : number > 0 or np.inf
+        If finite, returns the soft mask computed in a numerically stable way
+
+        If infinite, returns a hard (binary) mask equivalent to `X > X_ref`.
+        Note: for hard masks, ties are always broken in favor of `X_ref` (`mask=0`).
+
+
+    split_zeros : bool
+        If `True`, entries where `X` and X`_ref` are both small (close to 0)
+        will receive mask values of 0.5.
+
+        Otherwise, the mask is set to 0 for these entries.
+
+
+    Returns
+    -------
+    mask : np.ndarray, shape=`X.shape`
+        The output mask array
+
+    Raises
+    ------
+    ParameterError
+        If `X` and `X_ref` have different shapes.
+
+        If `X` or `X_ref` are negative anywhere
+
+        If `power <= 0`
+
+    Examples
+    --------
+
+    >>> X = 2 * np.ones((3, 3))
+    >>> X_ref = np.vander(np.arange(3.0))
+    >>> X
+    array([[ 2.,  2.,  2.],
+           [ 2.,  2.,  2.],
+           [ 2.,  2.,  2.]])
+    >>> X_ref
+    array([[ 0.,  0.,  1.],
+           [ 1.,  1.,  1.],
+           [ 4.,  2.,  1.]])
+    >>> librosa.util.softmask(X, X_ref, power=1)
+    array([[ 1.   ,  1.   ,  0.667],
+           [ 0.667,  0.667,  0.667],
+           [ 0.333,  0.5  ,  0.667]])
+    >>> librosa.util.softmask(X_ref, X, power=1)
+    array([[ 0.   ,  0.   ,  0.333],
+           [ 0.333,  0.333,  0.333],
+           [ 0.667,  0.5  ,  0.333]])
+    >>> librosa.util.softmask(X, X_ref, power=2)
+    array([[ 1. ,  1. ,  0.8],
+           [ 0.8,  0.8,  0.8],
+           [ 0.2,  0.5,  0.8]])
+    >>> librosa.util.softmask(X, X_ref, power=4)
+    array([[ 1.   ,  1.   ,  0.941],
+           [ 0.941,  0.941,  0.941],
+           [ 0.059,  0.5  ,  0.941]])
+    >>> librosa.util.softmask(X, X_ref, power=100)
+    array([[  1.000e+00,   1.000e+00,   1.000e+00],
+           [  1.000e+00,   1.000e+00,   1.000e+00],
+           [  7.889e-31,   5.000e-01,   1.000e+00]])
+    >>> librosa.util.softmask(X, X_ref, power=np.inf)
+    array([[ True,  True,  True],
+           [ True,  True,  True],
+           [False, False,  True]], dtype=bool)
+    '''
+    if X.shape != X_ref.shape:
+        raise ParameterError('Shape mismatch: {}!={}'.format(X.shape,
+                                                             X_ref.shape))
+
+    if np.any(X < 0) or np.any(X_ref < 0):
+        raise ParameterError('X and X_ref must be non-negative')
+
+    if power <= 0:
+        raise ParameterError('power must be strictly positive')
+
+    # We're working with ints, cast to float.
+    dtype = X.dtype
+    if not np.issubdtype(dtype, np.floating):
+        dtype = np.float32
+
+    # Re-scale the input arrays relative to the larger value
+    Z = np.maximum(X, X_ref).astype(dtype)
+    bad_idx = (Z < np.finfo(dtype).tiny)
+    Z[bad_idx] = 1
+
+    # For finite power, compute the softmask
+    if np.isfinite(power):
+        mask = (X / Z)**power
+        ref_mask = (X_ref / Z)**power
+        good_idx = ~bad_idx
+        mask[good_idx] /= mask[good_idx] + ref_mask[good_idx]
+        # Wherever energy is below energy in both inputs, split the mask
+        if split_zeros:
+            mask[bad_idx] = 0.5
+        else:
+            mask[bad_idx] = 0.0
+    else:
+        # Otherwise, compute the hard mask
+        mask = X > X_ref
+
+    return mask
+
+
+def magphase(D, power=1):
+    """Separate a complex-valued spectrogram D into its magnitude (S)
+    and phase (P) components, so that `D = S * P`.
+
+
+    Parameters
+    ----------
+    D       : np.ndarray [shape=(d, t), dtype=complex]
+        complex-valued spectrogram
+    power : float > 0
+        Exponent for the magnitude spectrogram,
+        e.g., 1 for energy, 2 for power, etc.
+
+
+    Returns
+    -------
+    D_mag   : np.ndarray [shape=(d, t), dtype=real]
+        magnitude of `D`, raised to `power`
+    D_phase : np.ndarray [shape=(d, t), dtype=complex]
+        `exp(1.j * phi)` where `phi` is the phase of `D`
+
+
+    Examples
+    --------
+    >>> y, sr = librosa.load(librosa.util.example_audio_file())
+    >>> D = librosa.stft(y)
+    >>> magnitude, phase = librosa.magphase(D)
+    >>> magnitude
+    array([[  2.524e-03,   4.329e-02, ...,   3.217e-04,   3.520e-05],
+           [  2.645e-03,   5.152e-02, ...,   3.283e-04,   3.432e-04],
+           ...,
+           [  1.966e-05,   9.828e-06, ...,   3.164e-07,   9.370e-06],
+           [  1.966e-05,   9.830e-06, ...,   3.161e-07,   9.366e-06]], dtype=float32)
+    >>> phase
+    array([[  1.000e+00 +0.000e+00j,   1.000e+00 +0.000e+00j, ...,
+             -1.000e+00 +8.742e-08j,  -1.000e+00 +8.742e-08j],
+           [  1.000e+00 +1.615e-16j,   9.950e-01 -1.001e-01j, ...,
+              9.794e-01 +2.017e-01j,   1.492e-02 -9.999e-01j],
+           ...,
+           [  1.000e+00 -5.609e-15j,  -5.081e-04 +1.000e+00j, ...,
+             -9.549e-01 -2.970e-01j,   2.938e-01 -9.559e-01j],
+           [ -1.000e+00 +8.742e-08j,  -1.000e+00 +8.742e-08j, ...,
+             -1.000e+00 +8.742e-08j,  -1.000e+00 +8.742e-08j]], dtype=complex64)
+
+
+    Or get the phase angle (in radians)
+
+    >>> np.angle(phase)
+    array([[  0.000e+00,   0.000e+00, ...,   3.142e+00,   3.142e+00],
+           [  1.615e-16,  -1.003e-01, ...,   2.031e-01,  -1.556e+00],
+           ...,
+           [ -5.609e-15,   1.571e+00, ...,  -2.840e+00,  -1.273e+00],
+           [  3.142e+00,   3.142e+00, ...,   3.142e+00,   3.142e+00]], dtype=float32)
+
+    """
+
+    mag = np.abs(D)
+    mag **= power
+    phase = np.exp(1.j * np.angle(D))
+
+    return mag, phase
