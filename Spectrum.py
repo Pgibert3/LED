@@ -3,10 +3,12 @@ import warnings
 import pyaudio
 from librosa_z import util
 import time
+import color_switch
+import matplotlib.pyplot as plt
 
 class Spectrum:
-    def __init__(self, conn, sr=22050, frame_size=2048, hop=512):
-        self.conn = conn
+    def __init__(self, sr=22050, frame_size=2048, hop=512):
+        #self.conn = conn
         self.sr = sr
         self.frame_size = frame_size
         self.hop = hop
@@ -15,9 +17,13 @@ class Spectrum:
         self.yb = np.zeros(self.frame_size)
         self.pk_delay = 0
         self.start_delay = self.frame_size // self.hop
+        self.norm = 1
+        self.norm_count = self.sr * 3
 
         self.hist_y = np.array([])
-        self.hist_onset = np.array([0])
+        self.hist_onset = np.zeros(10)
+        
+        self.color_switch = color_switch.color_switch(60)
 
 
     def start(self):
@@ -47,12 +53,13 @@ class Spectrum:
         self.yb = np.delete(self.yb, np.s_[:self.hop])
         self.yb = np.append(self.yb, y)
 
-
+    
     def append_hist_y(self, y):
         self.hist_y = np.append(self.hist_y, y)
 
 
-    def append_hist_onset(self, onset):
+    def update_hist_onset(self, onset):
+        self.hist_onset = np.delete(self.hist_onset, 0)
         self.hist_onset = np.append(self.hist_onset, onset)
 
 
@@ -72,6 +79,7 @@ class Spectrum:
 
 
     def onset_strength(self, y):
+        y_h, y_p = util.hpss(y)
         S = self.melspectrogram(y)
         S = util.power_to_db(S)
 
@@ -80,10 +88,11 @@ class Spectrum:
         onset = S - self.S_ref
         onset = np.maximum(0.0, onset)
         onset = self.aggregate(onset, 1, 0)
+            
         return onset, S
 
     #TODO: is_peak() needs further tuning
-    def is_peak(self, onset, hist=10, wait=5, c=2.0):
+    def is_peak(self, onset, hist=6, wait=1, th=.7):
         if len(self.hist_onset) + 1 < hist:
             return False
         else:
@@ -93,7 +102,7 @@ class Spectrum:
             if self.pk_delay > 0:
                 self.pk_delay -=1
                 return False
-            elif onset > prev_max and onset > prev_avg * c:
+            elif onset > prev_max and onset > prev_avg + th:
                 self.pk_delay = wait
                 return True
 
@@ -102,23 +111,31 @@ class Spectrum:
         return self.hist_onset[-1]
 
 
-    def run_onset_detection(self, delay=.001):
-		While True:
-			try:
-				y = np.fromstring(self.stream.read(self.hop, exception_on_overflow=False), dtype=np.float32)
-			except AttributeError:
-				warnings.warn('No audio stream detected. Consider calling Spectrum.start()')
-				return
+    def run_onset_detection(self):
+        while True:
+            try:
+                y = np.fromstring(self.stream.read(self.hop, exception_on_overflow=False), dtype=np.float32)
+            except AttributeError:
+                warnings.warn('No audio stream detected. Consider calling Spectrum.start()')
+                return
 
-			self.update_yb(y)
-			onset, self.S_ref = self.onset_strength(self.yb)
-			self.append_hist_y(y)
+            self.update_yb(y)
+            onset, self.S_ref = self.onset_strength(self.yb)
+            #self.append_hist_y(y)
 
-			if self.start_delay > 0:
-				self.append_hist_onset(0)
-				self.start_delay -=1
-			else:
-				self.append_hist_onset(onset)
+            if self.start_delay > 0:
+                    self.update_hist_onset(0)
+                    self.start_delay -= 1
+            else:
+                    self.update_hist_onset(onset)
 
-			self.conn.send(self.is_peak(onset))
-			time.sleep(delay)
+            #self.conn.send(self.is_peak(onset))
+            if self.is_peak(onset):
+                self.color_switch.fwd_rot()
+
+try:
+    spec = Spectrum()
+    spec.start()
+except KeyboardInterrupt:
+    plt.plot(spec.hist_onset)
+    plt.show()

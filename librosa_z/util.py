@@ -1319,190 +1319,192 @@ def tempo_frequencies(n_bins, hop_length=512, sr=22050):
 
 
 def hpss(S, kernel_size=31, power=2.0, mask=False, margin=1.0):
-"""Median-filtering harmonic percussive source separation (HPSS).
+    """Median-filtering harmonic percussive source separation (HPSS).
 
-If `margin = 1.0`, decomposes an input spectrogram `S = H + P`
-where `H` contains the harmonic components,
-and `P` contains the percussive components.
+    If `margin = 1.0`, decomposes an input spectrogram `S = H + P`
+    where `H` contains the harmonic components,
+    and `P` contains the percussive components.
 
-If `margin > 1.0`, decomposes an input spectrogram `S = H + P + R`
-where `R` contains residual components not included in `H` or `P`.
+    If `margin > 1.0`, decomposes an input spectrogram `S = H + P + R`
+    where `R` contains residual components not included in `H` or `P`.
 
-This implementation is based upon the algorithm described by [1]_ and [2]_.
+    This implementation is based upon the algorithm described by [1]_ and [2]_.
 
-.. [1] Fitzgerald, Derry.
-    "Harmonic/percussive separation using median filtering."
-    13th International Conference on Digital Audio Effects (DAFX10),
-    Graz, Austria, 2010.
+    .. [1] Fitzgerald, Derry.
+        "Harmonic/percussive separation using median filtering."
+        13th International Conference on Digital Audio Effects (DAFX10),
+        Graz, Austria, 2010.
 
-.. [2] Driedger, Müller, Disch.
-    "Extending harmonic-percussive separation of audio."
-    15th International Society for Music Information Retrieval Conference (ISMIR 2014),
-    Taipei, Taiwan, 2014.
+    .. [2] Driedger, Müller, Disch.
+        "Extending harmonic-percussive separation of audio."
+        15th International Society for Music Information Retrieval Conference (ISMIR 2014),
+        Taipei, Taiwan, 2014.
 
-Parameters
-----------
-S : np.ndarray [shape=(d, n)]
-    input spectrogram. May be real (magnitude) or complex.
+    Parameters
+    ----------
+    S : np.ndarray [shape=(d, n)]
+        input spectrogram. May be real (magnitude) or complex.
 
-kernel_size : int or tuple (kernel_harmonic, kernel_percussive)
-    kernel size(s) for the median filters.
+    kernel_size : int or tuple (kernel_harmonic, kernel_percussive)
+        kernel size(s) for the median filters.
 
-    - If scalar, the same size is used for both harmonic and percussive.
-    - If tuple, the first value specifies the width of the
-      harmonic filter, and the second value specifies the width
-      of the percussive filter.
+        - If scalar, the same size is used for both harmonic and percussive.
+        - If tuple, the first value specifies the width of the
+          harmonic filter, and the second value specifies the width
+          of the percussive filter.
 
-power : float > 0 [scalar]
-    Exponent for the Wiener filter when constructing soft mask matrices.
+    power : float > 0 [scalar]
+        Exponent for the Wiener filter when constructing soft mask matrices.
 
-mask : bool
-    Return the masking matrices instead of components.
+    mask : bool
+        Return the masking matrices instead of components.
 
-    Masking matrices contain non-negative real values that
-    can be used to measure the assignment of energy from `S`
-    into harmonic or percussive components.
+        Masking matrices contain non-negative real values that
+        can be used to measure the assignment of energy from `S`
+        into harmonic or percussive components.
 
-    Components can be recovered by multiplying `S * mask_H`
-    or `S * mask_P`.
-
-
-margin : float or tuple (margin_harmonic, margin_percussive)
-    margin size(s) for the masks (as described in [2]_)
-
-    - If scalar, the same size is used for both harmonic and percussive.
-    - If tuple, the first value specifies the margin of the
-      harmonic mask, and the second value specifies the margin
-      of the percussive mask.
-
-Returns
--------
-harmonic : np.ndarray [shape=(d, n)]
-    harmonic component (or mask)
-
-percussive : np.ndarray [shape=(d, n)]
-    percussive component (or mask)
+        Components can be recovered by multiplying `S * mask_H`
+        or `S * mask_P`.
 
 
-See Also
---------
-util.softmask
+    margin : float or tuple (margin_harmonic, margin_percussive)
+        margin size(s) for the masks (as described in [2]_)
 
-Notes
------
-This function caches at level 30.
+        - If scalar, the same size is used for both harmonic and percussive.
+        - If tuple, the first value specifies the margin of the
+          harmonic mask, and the second value specifies the margin
+          of the percussive mask.
 
-Examples
---------
-Separate into harmonic and percussive
+    Returns
+    -------
+    harmonic : np.ndarray [shape=(d, n)]
+        harmonic component (or mask)
 
->>> y, sr = librosa.load(librosa.util.example_audio_file(), duration=15)
->>> D = librosa.stft(y)
->>> H, P = librosa.decompose.hpss(D)
-
->>> import matplotlib.pyplot as plt
->>> plt.figure()
->>> plt.subplot(3, 1, 1)
->>> librosa.display.specshow(librosa.amplitude_to_db(D,
-...                                                  ref=np.max),
-...                          y_axis='log')
->>> plt.colorbar(format='%+2.0f dB')
->>> plt.title('Full power spectrogram')
->>> plt.subplot(3, 1, 2)
->>> librosa.display.specshow(librosa.amplitude_to_db(H,
-...                                                  ref=np.max),
-...                          y_axis='log')
->>> plt.colorbar(format='%+2.0f dB')
->>> plt.title('Harmonic power spectrogram')
->>> plt.subplot(3, 1, 3)
->>> librosa.display.specshow(librosa.amplitude_to_db(P,
-...                                                  ref=np.max),
-...                          y_axis='log')
->>> plt.colorbar(format='%+2.0f dB')
->>> plt.title('Percussive power spectrogram')
->>> plt.tight_layout()
+    percussive : np.ndarray [shape=(d, n)]
+        percussive component (or mask)
 
 
-Or with a narrower horizontal filter
+    See Also
+    --------
+    util.softmask
 
->>> H, P = librosa.decompose.hpss(D, kernel_size=(13, 31))
+    Notes
+    -----
+    This function caches at level 30.
 
-Just get harmonic/percussive masks, not the spectra
+    Examples
+    --------
+    Separate into harmonic and percussive
 
->>> mask_H, mask_P = librosa.decompose.hpss(D, mask=True)
->>> mask_H
-array([[  1.000e+00,   1.469e-01, ...,   2.648e-03,   2.164e-03],
-       [  1.000e+00,   2.368e-01, ...,   9.413e-03,   7.703e-03],
-       ...,
-       [  8.869e-01,   5.673e-02, ...,   4.603e-02,   1.247e-05],
-       [  7.068e-01,   2.194e-02, ...,   4.453e-02,   1.205e-05]], dtype=float32)
->>> mask_P
-array([[  2.858e-05,   8.531e-01, ...,   9.974e-01,   9.978e-01],
-       [  1.586e-05,   7.632e-01, ...,   9.906e-01,   9.923e-01],
-       ...,
-       [  1.131e-01,   9.433e-01, ...,   9.540e-01,   1.000e+00],
-       [  2.932e-01,   9.781e-01, ...,   9.555e-01,   1.000e+00]], dtype=float32)
+    >>> y, sr = librosa.load(librosa.util.example_audio_file(), duration=15)
+    >>> D = librosa.stft(y)
+    >>> H, P = librosa.decompose.hpss(D)
 
-Separate into harmonic/percussive/residual components by using a margin > 1.0
+    >>> import matplotlib.pyplot as plt
+    >>> plt.figure()
+    >>> plt.subplot(3, 1, 1)
+    >>> librosa.display.specshow(librosa.amplitude_to_db(D,
+    ...                                                  ref=np.max),
+    ...                          y_axis='log')
+    >>> plt.colorbar(format='%+2.0f dB')
+    >>> plt.title('Full power spectrogram')
+    >>> plt.subplot(3, 1, 2)
+    >>> librosa.display.specshow(librosa.amplitude_to_db(H,
+    ...                                                  ref=np.max),
+    ...                          y_axis='log')
+    >>> plt.colorbar(format='%+2.0f dB')
+    >>> plt.title('Harmonic power spectrogram')
+    >>> plt.subplot(3, 1, 3)
+    >>> librosa.display.specshow(librosa.amplitude_to_db(P,
+    ...                                                  ref=np.max),
+    ...                          y_axis='log')
+    >>> plt.colorbar(format='%+2.0f dB')
+    >>> plt.title('Percussive power spectrogram')
+    >>> plt.tight_layout()
 
->>> H, P = librosa.decompose.hpss(D, margin=3.0)
->>> R = D - (H+P)
->>> y_harm = librosa.core.istft(H)
->>> y_perc = librosa.core.istft(P)
->>> y_resi = librosa.core.istft(R)
+
+    Or with a narrower horizontal filter
+
+    >>> H, P = librosa.decompose.hpss(D, kernel_size=(13, 31))
+
+    Just get harmonic/percussive masks, not the spectra
+
+    >>> mask_H, mask_P = librosa.decompose.hpss(D, mask=True)
+    >>> mask_H
+    array([[  1.000e+00,   1.469e-01, ...,   2.648e-03,   2.164e-03],
+           [  1.000e+00,   2.368e-01, ...,   9.413e-03,   7.703e-03],
+           ...,
+           [  8.869e-01,   5.673e-02, ...,   4.603e-02,   1.247e-05],
+           [  7.068e-01,   2.194e-02, ...,   4.453e-02,   1.205e-05]], dtype=float32)
+    >>> mask_P
+    array([[  2.858e-05,   8.531e-01, ...,   9.974e-01,   9.978e-01],
+           [  1.586e-05,   7.632e-01, ...,   9.906e-01,   9.923e-01],
+           ...,
+           [  1.131e-01,   9.433e-01, ...,   9.540e-01,   1.000e+00],
+           [  2.932e-01,   9.781e-01, ...,   9.555e-01,   1.000e+00]], dtype=float32)
+
+    Separate into harmonic/percussive/residual components by using a margin > 1.0
+
+    >>> H, P = librosa.decompose.hpss(D, margin=3.0)
+    >>> R = D - (H+P)
+    >>> y_harm = librosa.core.istft(H)
+    >>> y_perc = librosa.core.istft(P)
+    >>> y_resi = librosa.core.istft(R)
 
 
-Get a more isolated percussive component by widening its margin
+    Get a more isolated percussive component by widening its margin
 
->>> H, P = librosa.decompose.hpss(D, margin=(1.0,5.0))
+    >>> H, P = librosa.decompose.hpss(D, margin=(1.0,5.0))
 
-"""
+    """
 
-if np.iscomplexobj(S):
-    S, phase = magphase(S)
-else:
-    phase = 1
+    if np.iscomplexobj(S):
+        S, phase = magphase(S)
+    else:
+        phase = 1
 
-if np.isscalar(kernel_size):
-    win_harm = kernel_size
-    win_perc = kernel_size
-else:
-    win_harm = kernel_size[0]
-    win_perc = kernel_size[1]
+    if np.isscalar(kernel_size):
+        win_harm = kernel_size
+        win_perc = kernel_size
+    else:
+        win_harm = kernel_size[0]
+        win_perc = kernel_size[1]
 
-if np.isscalar(margin):
-    margin_harm = margin
-    margin_perc = margin
-else:
-    margin_harm = margin[0]
-    margin_perc = margin[1]
+    if np.isscalar(margin):
+        margin_harm = margin
+        margin_perc = margin
+    else:
+        margin_harm = margin[0]
+        margin_perc = margin[1]
 
-# margin minimum is 1.0
-if margin_harm < 1 or margin_perc < 1:
-    raise ParameterError("Margins must be >= 1.0. "
-                         "A typical range is between 1 and 10.")
+    # margin minimum is 1.0
+    if margin_harm < 1 or margin_perc < 1:
+        raise ParameterError("Margins must be >= 1.0. "
+                             "A typical range is between 1 and 10.")
 
-# Compute median filters. Pre-allocation here preserves memory layout.
-harm = np.empty_like(S)
-harm[:] = median_filter(S, size=(1, win_harm), mode='reflect')
+    # Compute median filters. Pre-allocation here preserves memory layout.
+    harm = np.empty_like(S)
+    #harm[:] = median_filter(S, size=(1, win_harm), mode='reflect')
+    harm[:] = median_filter(S, size=10, mode='reflect')
+    
+    perc = np.empty_like(S)
+    #perc[:] = median_filter(S, size=(win_perc, 1), mode='reflect')
+    perc[:] = median_filter(S, size=10, mode='reflect')
 
-perc = np.empty_like(S)
-perc[:] = median_filter(S, size=(win_perc, 1), mode='reflect')
+    split_zeros = (margin_harm == 1 and margin_perc == 1)
 
-split_zeros = (margin_harm == 1 and margin_perc == 1)
+    mask_harm = softmask(harm, perc * margin_harm,
+                              power=power,
+                              split_zeros=split_zeros)
 
-mask_harm = softmask(harm, perc * margin_harm,
-                          power=power,
-                          split_zeros=split_zeros)
+    mask_perc = softmask(perc, harm * margin_perc,
+                              power=power,
+                              split_zeros=split_zeros)
 
-mask_perc = softmask(perc, harm * margin_perc,
-                          power=power,
-                          split_zeros=split_zeros)
+    if mask:
+        return mask_harm, mask_perc
 
-if mask:
-    return mask_harm, mask_perc
-
-return ((S * mask_harm) * phase, (S * mask_perc) * phase)
+    return ((S * mask_harm) * phase, (S * mask_perc) * phase)
 
 
 def softmask(X, X_ref, power=1, split_zeros=False):
@@ -1591,8 +1593,9 @@ def softmask(X, X_ref, power=1, split_zeros=False):
                                                              X_ref.shape))
 
     if np.any(X < 0) or np.any(X_ref < 0):
-        raise ParameterError('X and X_ref must be non-negative')
-
+        #raise ParameterError('X and X_ref must be non-negative')
+        pass
+    
     if power <= 0:
         raise ParameterError('power must be strictly positive')
 
