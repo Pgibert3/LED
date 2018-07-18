@@ -7,8 +7,10 @@ import color_switch
 import matplotlib.pyplot as plt
 
 class Spectrum:
-    def __init__(self, sr=22050, frame_size=2048, hop=512):
-        #self.conn = conn
+    def __init__(self, anim_conn, brain_conn sr=22050, frame_size=2048, hop=512):
+        self.canim_conn = anim_conn
+        self.brain_conn = brain_conn
+
         self.sr = sr
         self.frame_size = frame_size
         self.hop = hop
@@ -23,8 +25,8 @@ class Spectrum:
         self.hist_y = np.array([])
         self.hist_onset = np.zeros(10)
         
-        self.color_switch = color_switch.color_switch(60)
-
+        self.mel_basis = util.mel(sr=self.sr, n_fft=self.frame_size, n_mels=128)
+        
 
     def start(self):
         self.p = pyaudio.PyAudio()
@@ -61,16 +63,16 @@ class Spectrum:
     def update_hist_onset(self, onset):
         self.hist_onset = np.delete(self.hist_onset, 0)
         self.hist_onset = np.append(self.hist_onset, onset)
-
+        
 
     def melspectrogram(self, y, n_mels=128):
         window = np.hanning(len(y))
         S = np.fft.fft(y * window)
         frst_half = int(len(S)//2 + 1)
         S = np.abs(S[:frst_half]/len(S))**2
-        mel_basis = util.mel(sr=self.sr, n_fft=self.frame_size, n_mels=n_mels)
+        mspec = np.dot(self.mel_basis, S)
 
-        return np.dot(mel_basis, S)
+        return mspec
 
 
     def aggregate(self, y, a, b):
@@ -88,7 +90,6 @@ class Spectrum:
         onset = S - self.S_ref
         onset = np.maximum(0.0, onset)
         onset = self.aggregate(onset, 1, 0)
-            
         return onset, S
 
     #TODO: is_peak() needs further tuning
@@ -128,14 +129,11 @@ class Spectrum:
                     self.start_delay -= 1
             else:
                     self.update_hist_onset(onset)
-
-            #self.conn.send(self.is_peak(onset))
-            if self.is_peak(onset):
-                self.color_switch.fwd_rot()
-
-try:
-    spec = Spectrum()
-    spec.start()
-except KeyboardInterrupt:
-    plt.plot(spec.hist_onset)
-    plt.show()
+            peak = self.is_peak(onset)
+            self.send_data((onset, peak))
+    
+    
+    def send_data(self, data):
+        self.anim_conn.send(data)
+        self.brain_conn.send(data)
+             

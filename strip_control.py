@@ -1,10 +1,6 @@
 import spidev
-import numpy as np
 
-
-class strip_control:
-	
-	
+class StripControl:
 	def __init__(self, num_leds, speed=3000000):
 		self.num_leds = num_leds
 		

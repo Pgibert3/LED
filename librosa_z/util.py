@@ -3,6 +3,7 @@ import warnings
 from . import exceptions
 import six
 from scipy.ndimage import median_filter
+import time
 
 '''included methods:
         power_to_db,
@@ -580,7 +581,7 @@ def mel(sr, n_fft, n_mels=128, fmin=0.0, fmax=None, htk=False,
 
     fdiff = np.diff(mel_f)
     ramps = np.subtract.outer(mel_f, fftfreqs)
-
+    t0 = time.time()
     for i in range(n_mels):
         # lower and upper slopes for all bins
         lower = -ramps[i] / fdiff[i]
@@ -588,7 +589,8 @@ def mel(sr, n_fft, n_mels=128, fmin=0.0, fmax=None, htk=False,
 
         # .. then intersect them with each other and zero
         weights[i] = np.maximum(0, np.minimum(lower, upper))
-
+    t1 = time.time()
+    print("mel_for() : {}s".format(t1 - t0))
     if norm == 1:
         # Slaney-style mel is scaled to be approx constant energy per channel
         enorm = 2.0 / (mel_f[2:n_mels+2] - mel_f[:n_mels])

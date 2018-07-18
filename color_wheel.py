@@ -1,4 +1,4 @@
-class color_wheel:
+class ColorWheel:
 	def __init__(self, colors):
 		self.colors = colors
 		self.pos = 0

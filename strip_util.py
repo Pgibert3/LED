@@ -1,10 +1,9 @@
-import numpy as np
-import time
 import strip_control
+import time
 
 
 NUM_LEDS = 60
-control = strip_control.strip_control(NUM_LEDS)
+control = strip_control.StripControl(NUM_LEDS)
 
 
 def fill(r, g, b, lv=15):

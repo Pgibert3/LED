@@ -2,34 +2,39 @@ import Spectrum
 import color_switch
 from multiprocessing import Process, Pipe
 
-class brain:
+class Brain:
     def __init__(self, num_leds):
         self.num_leds = num_leds
-        self.parent_data_conn, child_data_conn = Pipe(True)
-        self.parent_mode_conn, child_mode_conn = Pipe(True)
-
-        self.Spectrum = Spectrum.Spectrum(child_data_conn)
-        self.color_switch = color_switch.color_switch(child_mode_conn, self.num_leds)
-
-        self.onset_p = Process(target=self.color_switch.start)
-        self.switch_p = Process(target=self.Spectrum.start)
-
-        self.trigger = False
-
-        self.mode = 0
+        
+        #Pipes
+        slv_spec2anim_conn, mst_spec2anim_conn = Pipe(False)
+        slv_spec2brain_conn, mst_spec2brain_conn = Pipe(False)
+        brain2anim_conn, anim2brain_conn = Pipe(True)
+        
+        #Classes
+        self.anim = animation_control.animation_control(
+                                slv_spec2anim_conn,
+                                anim2brain_conn,
+                                self.num_leds)
+        self.spec = Spectrum.Spectrum(mst_spec2anim_conn,
+                                      mst_spec2brain_conn)
+        
+        #Processes
+        self.spec_pr = Process(target=spec.start)
+        self.anim_pr = Process(target=anim.start)
         
         
     def start(self):
-        self.onset_p.start()
-        self.switch_p.start()
+        self.spec_pr.start()
+        self.anim_pr.start()
 
 
     def run(self):
         while True:
-            if self.parent_data_conn.poll():
-                data = self.parent_data_conn.recv()
-                if data:
-                    self.parent_mode_conn.send(self.mode)
+            #TODO: Recieve and process onset data
+            pass
+
+        
                     
             
             
