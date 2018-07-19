@@ -3,12 +3,11 @@ import warnings
 import pyaudio
 from librosa_z import util
 import time
-import color_switch
 import matplotlib.pyplot as plt
 
 class Spectrum:
-    def __init__(self, anim_conn, brain_conn sr=22050, frame_size=2048, hop=512):
-        self.canim_conn = anim_conn
+    def __init__(self, anim_conn, brain_conn, sr=22050, frame_size=2048, hop=512):
+        self.anim_conn = anim_conn
         self.brain_conn = brain_conn
 
         self.sr = sr
@@ -135,5 +134,5 @@ class Spectrum:
     
     def send_data(self, data):
         self.anim_conn.send(data)
-        self.brain_conn.send(data)
+        #self.brain_conn.send(data)
              
