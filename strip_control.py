@@ -21,7 +21,7 @@ class StripControl:
 		self.spi.max_speed_hz = speed
 	
 	
-	def set_led(self, i, r, g, b, lv):
+	def set_leds(self, i, color):
 		r_index = 4 + 4*i + 3
 		g_index = 4 + 4*i + 2
 		b_index = 4 + 4*i + 1
