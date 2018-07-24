@@ -28,7 +28,6 @@ class Brain:
 		self.spec_pr.start()
 		self.anim_pr.start()
 
-
 	def run(self):
 		self.start()
 		while True:
