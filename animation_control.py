@@ -11,7 +11,7 @@ class AnimationControl():
 		self.mode_settings = {
 						"origin" : 0,
 						"speed" : .5,
-						"tail" : 6}
+						"tail" : 2}
 		self.clr_sw = animations.ColorSwitch(self.mode_settings, num_leds)
 		self.clr_pls = animations.ColorPulse(self.mode_settings, num_leds)
 

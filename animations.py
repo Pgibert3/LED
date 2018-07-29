@@ -31,44 +31,71 @@ class ColorPulse(Animation):
 		
 		
 	def next_frame(self, settings, aud_data):
-		#TODO: FIX speed < 1
 		self.update_settings(settings)
-		#wait for delay to end
 		if self.delay > 0:
 			self.delay -= 1
-		#else calc speed, new delay, and step
 		else:
-			if settings["speed"] < 1:
-				self.delay = int(0.5 * (1 / settings["speed"]))
-				self.step = 1
+			self.shift(self.step, self.settings["origin"])
+			self.set_framerate(self.settings["speed"])
+			self.write_origin([254, 0, 0, 15], self.step, self.settings["origin"], aud_data["onset"]) 
+		if aud_data["onset"]:
+			self.tail = settings["tail"]
+			self.write_origin([254, 0, 0, 15], self.step, self.settings["origin"], aud_data["onset"]) 
+			self.set_framerate(self.settings["speed"])
+		self.control.set_strip(self.leds, wr_black=True)
+		self.control.show()
+		
+		
+	def shift(self, step, origin):
+		if origin == 0:
+			self.leds[step:] = self.leds[:-step]
+		elif origin == 1:
+			self.leds[:-step] = self.leds[step:]
+	
+	
+	def write_origin(self, color, step, origin, onset):
+		if self.tail > 0:
+			if self.tail < self.step:
+				if onset:
+					if origin == 0:
+						self.leds[:self.tail] = color
+						self.leds[self.tail:self.step] = [0, 0, 0, 15]
+					elif origin == 1:
+						self.leds[-self.tail:] = color
+						self.leds[-self.step:-self.tail] = [0, 0, 0, 15]
+				else:
+					if origin == 0:
+						self.leds[:self.step] = [0, 0, 0, 15]
+					elif origin == 1:
+						self.leds[-self.step:] = [0, 0, 0, 15]
 			else:
-				self.delay = 0
-				self.step = self.settings["speed"]
-			#shift
-			self.leds[self.step:] = self.leds[:-self.step]
-			#light an led at the origin
-			if self.settings["origin"] == 0:
-				if aud_data["onset"]:
-					self.leds[:self.step] = [254, 0, 0, 15]
-					self.tail = settings["tail"]
-				elif self.tail > 0:
-					self.leds[:self.step] = [254, 0, 0, 15]
-					self.tail -= self.step
-				else:
-					self.leds[:self.step] = [0, 0, 0, 15]
-			elif self.settings["origin"] == 1:
-				if aud_data["onset"]:
-					self.leds[self.num_leds-self.step:] = [254, 0, 0, 15]
-					self.tail = settings["tail"]
-				elif self.tail > 0:
-					self.leds[self.num_leds-self.step:] = [254, 0, 0, 15]
-					self.tail -= self.step
-				else:
-					self.leds[self.num_leds-self.step:] = [0, 0, 0, 15]
-			self.control.set_strip(self.leds, wr_black=True)
-			self.control.show()
-		
-		
+				limit = min(self.tail, self.step)
+				if origin == 0:
+					self.leds[self.step-limit:self.step] = color
+					self.leds[:self.step-limit] = [0, 0, 0, 15]
+				elif origin == 1:
+					self.leds[-self.step:-self.step+limit] = color
+					self.leds[-self.step+limit:] = [0, 0, 0, 15]
+				self.tail = max(0, self.tail - self.step)
+		else:
+			if self.tail < 0:
+				self.tail = 0
+			if origin == 0:
+				self.leds[:self.step] = [0, 0, 0, 15]
+			elif origin == 1:
+				self.leds[-self.step:] = [0, 0, 0, 15]
+			
+	
+	
+	def set_framerate(self, speed):
+		if speed < 1:
+			self.delay = int(0.5 * (1 / speed))
+			self.step = 1
+		else:
+			self.delay = 0
+			self.step = speed
+					
+				
 class ColorSwitch(Animation):
 	def __init__(self, default_settings, num_leds):
 		super().__init__(default_settings, num_leds)
