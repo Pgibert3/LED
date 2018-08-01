@@ -1,0 +1,69 @@
+{
+    "color_vectors": {
+        "rgb": {
+            "name": "rgb",
+            "description": "Classic RGB",
+            "attributes": {
+                "num_colors": 3,
+                "dist": 120.20815280171308
+            },
+            "values": [
+                [
+                    255,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    255,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    255
+                ]
+            ]
+        },
+        "rgb_rainbow": {
+            "name": "rgb_rainbow",
+            "description": "Basic RGB rainbow mix",
+            "attributes": {
+                "num_colors": 6,
+                "dist": 127.5
+            },
+            "values": [
+                [
+                    255,
+                    0,
+                    0
+                ],
+                [
+                    255,
+                    255,
+                    0
+                ],
+                [
+                    0,
+                    255,
+                    0
+                ],
+                [
+                    0,
+                    255,
+                    255
+                ],
+                [
+                    0,
+                    0,
+                    255
+                ],
+                [
+                    255,
+                    0,
+                    255
+                ]
+            ]
+        }
+    }
+}
