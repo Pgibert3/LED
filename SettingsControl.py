@@ -1,45 +1,29 @@
-class SettingsControl:
-    def __init__(self, animation_conn, attribute_max):
-        self.conn = animation_conn
-        self.attmax = attribute_max
+from Colors import Colors
 
-    def cast_complexity(self, complexity):
+
+class GlobalSettingsControl():
+    def __init__(self):
+        self.c = Colors()
+        self.colors = []
+
+    def get_settings_ctl(self, anim_data):
+        num_clrs = anim_data(["num_clrs"])
+        clr_dist = anim_data(["clr_dist"])
+        self.colors = self.c.get_colors(num_clrs_rng=num_clrs, dist_rng=clr_dist)
+        #create an animations json to store animation attributes
+
+
+class AnimationSettingsControl():
+    def __init__(self):
         pass
 
-    def cast_gradient(self, gradient):
-        pass
-
-    def cast_depth(self, depth):
-        pass
-
-    def send_settings(self, settings):
+    def get_animation(anim_dat):
         pass
 
 
-class SwitchSettingsControl(SettingsControl):
-    def __init__(self, animaiton_conn):
-         super().__init__(animation_conn)
+class SwitchSettingsControl(AnimationSettingsControl):
+    def __init__(self):
+        super().__init__()
 
-    def cast_complexity(self, complexity):
-        #complexity correlates somewhat to num of colors and the most to lv_filter
-
-
-    def cast_gradient(self, gradient):
-        #gradient correlates to color distribution and somewhat to lv_filter
-
-    def cast_depth(self, depth):
-        #depth correlates the most to num of colors
-
-
-class PulseSettingsControl(SettingsControl):
-    def __init__(self, animaiton_conn):
-         super().__init__(animation_conn)
-
-    def cast_complexity(self, complexity):
-        #complexity correlates somewhat to num of colors, the most to lv_filter, some to tail length
-
-    def cast_gradient(self, gradient):
-        #gradient correlates to color distribution and somewhat to lv_filter, the most to tail length
-
-    def cast_depth(self, depth):
-        #depth correlates the most to num of colors
+    def get_animation(self):
+        pass

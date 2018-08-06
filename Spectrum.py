@@ -23,9 +23,9 @@ class Spectrum:
 
 		self.hist_y = np.array([])
 		self.hist_onset = np.zeros(10)
-		
+
 		self.mel_basis = util.mel(sr=self.sr, n_fft=self.frame_size, n_mels=128)
-		
+
 
 	def start(self):
 		self.p = pyaudio.PyAudio()
@@ -54,7 +54,7 @@ class Spectrum:
 		self.yb = np.delete(self.yb, np.s_[:self.hop])
 		self.yb = np.append(self.yb, y)
 
-	
+
 	def append_hist_y(self, y):
 		self.hist_y = np.append(self.hist_y, y)
 
@@ -62,7 +62,7 @@ class Spectrum:
 	def update_hist_onset(self, onset):
 		self.hist_onset = np.delete(self.hist_onset, 0)
 		self.hist_onset = np.append(self.hist_onset, onset)
-		
+
 
 	def melspectrogram(self, y, n_mels=128):
 		window = np.hanning(len(y))
@@ -133,9 +133,8 @@ class Spectrum:
 					"onset" : peak,
 					"amplitude" : onset}
 			self.send_data(data)
-	
-	
+
+
 	def send_data(self, data):
 		self.anim_conn.send(data)
 		#self.brain_conn.send(data)
-			 

@@ -5,7 +5,7 @@
             "description": "Classic RGB",
             "attributes": {
                 "num_colors": 3,
-                "dist": 120
+                "dist": 8355712
             },
             "values": [
                 "0xFF0000",
@@ -13,26 +13,28 @@
                 "0x0000FF"
             ]
         },
-        "rgb_rainbow" : {
+        "rgb_rainbow": {
             "name": "rgb_rainbow",
             "description": "Basic RGB rainbow mix",
             "attributes": {
                 "num_colors": 6,
-                "dist": 127
+                "dist": 6710835
             },
             "values": [
                 "0xFF0000",
+                "0xFFFF00",
                 "0x00FF00",
-                "0x0000FF"
+                "0x00FFFF",
+                "0x0000FF",
+                "0xFF00FF"
             ]
         },
-
-        "violet_7" : {
-            "name": "violet_7",
-            "description": "Seven color violet gradient",
+        "violet_6": {
+            "name": "violet_6",
+            "description": "Six color violet gradient",
             "attributes": {
-                "num_colors": 0,
-                "dist": 0
+                "num_colors": 6,
+                "dist": 1344788
             },
             "values": [
                 "0x990099",
