@@ -1,9 +1,9 @@
-from Colors import Colors
+from ColorsUtil import ColorsUtil
 
 
 class GlobalSettingsControl():
     def __init__(self):
-        self.c = Colors()
+        self.c = ColorsUtil()
         self.colors = []
 
     def get_settings_ctl(self, anim_data):

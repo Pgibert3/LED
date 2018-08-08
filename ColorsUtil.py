@@ -2,7 +2,7 @@ import json
 import numpy as np
 
 
-class Colors:
+class ColorsUtil:
     def __init__(self):
         self.color_vectors = {}
         self.load_json()
@@ -10,6 +10,7 @@ class Colors:
     def load_json(self):
         with open("color_vectors.json", "r") as fh:
             self.color_vectors = json.loads(fh.read())
+        close(fh)
 
     def calc_attributes(self):
         vecs = self.color_vectors["color_vectors"]
@@ -25,6 +26,7 @@ class Colors:
     def update_json(self, compact=True):
         with open("color_vectors.json", "w") as fh:
             json.dump(self.color_vectors, fh, indent = None if compact else 4)
+        close(fh)
 
     def get_vec_keys(self, num_clrs_rng=None, dist_rng=None):
         vecs = self.color_vectors["color_vectors"]
