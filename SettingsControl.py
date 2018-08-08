@@ -9,8 +9,17 @@ class GlobalSettingsControl():
     def get_settings_ctl(self, anim_data):
         num_clrs = anim_data(["num_clrs"])
         clr_dist = anim_data(["clr_dist"])
+        area = anim_data(["area"])
+        clr_comp = anim_data(["color_complexity"])
+        dyn_pr = anim_data(["dynamic_progression"])
+        dyn_area = anim_data(["dynamic_area"])
         self.colors = self.c.get_colors(num_clrs_rng=num_clrs, dist_rng=clr_dist)
-        #create an animations json to store animation attributes
+        data = {
+                "area" : area,
+                "color_complexity" : clr_comp,
+                "dynamic_progression" : dyn_pr,
+                "dynamic_area" : "dyn_area"
+        }
 
 
 class AnimationSettingsControl():

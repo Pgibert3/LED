@@ -1,5 +1,5 @@
 import numpy as np
-import Color from Color
+
 
 class ColorWheel:
 	def __init__(self, colors):
@@ -9,5 +9,12 @@ class ColorWheel:
 	def get_color(self):
 		return self.colors[self.pos]
 
+	def get_colors(self):
+		return self.colors
+
 	def rotate(self, step):
 		self.pos = (self.pos + (step % len(self.colors))) % len(self.colors)
+
+	def next_color(self):
+		self.rotate(1)
+		return self.get_color()

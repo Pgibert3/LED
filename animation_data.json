@@ -1,0 +1,16 @@
+{
+    "animations": [
+        {
+            "name": "anim2",
+            "type": "Switch",
+            "effect": "0",
+            "colors": [
+                [
+                    1,
+                    2,
+                    3
+                ]
+            ]
+        }
+    ]
+}

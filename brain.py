@@ -1,43 +1,29 @@
 import Spectrum
-import animation_control
+import DisplayControl
 from multiprocessing import Process, Pipe
 
 class Brain:
 	def __init__(self, num_leds):
 		self.num_leds = num_leds
-		
 		#Pipes
-		slv_spec2anim_conn, mst_spec2anim_conn = Pipe(False) #F
+		slv_spec2disp_conn, mst_spec2disp_conn = Pipe(False) #F
 		slv_spec2brain_conn, mst_spec2brain_conn = Pipe(False) #F
-		brain2anim_conn, anim2brain_conn = Pipe(True)
-		
+		brain2disp_conn, disp2brain_conn = Pipe(True)
 		#Classes
-		anim = animation_control.AnimationControl(
-								slv_spec2anim_conn,
-								anim2brain_conn,
-								self.num_leds)
-		spec = Spectrum.Spectrum(mst_spec2anim_conn,
-									  mst_spec2brain_conn)
-		
+		disp = DisplayControl.DisplayControl(slv_spec2disp_conn, disp2brain_conn, self.num_leds)
+		spec = Spectrum.Spectrum(mst_spec2disp_conn, mst_spec2brain_conn)
 		#Processes
 		self.spec_pr = Process(target=spec.start)
-		self.anim_pr = Process(target=anim.start)
-		
-		
-	def start(self):
-		self.spec_pr.start()
-		self.anim_pr.start()
+		self.disp_pr = Process(target=disp.start)
 
-	def run(self):
-		self.start()
+	def start(self):
+		#self.spec_pr.start()
+		self.disp_pr.start()
 		while True:
 			#TODO: Recieve and process onset data
 			try:
 				pass
 			except KeyboardInterrupt:
-				self.spec_pr.join()
-				self.anim_pr.join()
-				
+				#self.spec_pr.join()
+				self.disp_pr.join()
 				break
-
-

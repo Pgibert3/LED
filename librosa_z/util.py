@@ -590,7 +590,6 @@ def mel(sr, n_fft, n_mels=128, fmin=0.0, fmax=None, htk=False,
         # .. then intersect them with each other and zero
         weights[i] = np.maximum(0, np.minimum(lower, upper))
     t1 = time.time()
-    print("mel_for() : {}s".format(t1 - t0))
     if norm == 1:
         # Slaney-style mel is scaled to be approx constant energy per channel
         enorm = 2.0 / (mel_f[2:n_mels+2] - mel_f[:n_mels])
@@ -1488,7 +1487,7 @@ def hpss(S, kernel_size=31, power=2.0, mask=False, margin=1.0):
     harm = np.empty_like(S)
     #harm[:] = median_filter(S, size=(1, win_harm), mode='reflect')
     harm[:] = median_filter(S, size=10, mode='reflect')
-    
+
     perc = np.empty_like(S)
     #perc[:] = median_filter(S, size=(win_perc, 1), mode='reflect')
     perc[:] = median_filter(S, size=10, mode='reflect')
@@ -1597,7 +1596,7 @@ def softmask(X, X_ref, power=1, split_zeros=False):
     if np.any(X < 0) or np.any(X_ref < 0):
         #raise ParameterError('X and X_ref must be non-negative')
         pass
-    
+
     if power <= 0:
         raise ParameterError('power must be strictly positive')
 
