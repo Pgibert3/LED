@@ -14,9 +14,9 @@ class AnimationCreator:
             self.anim_data = json.loads(fh.read())
             fh.close()
 
-    def save(self):
+    def save(self, indent=2):
         with open(self.fname, "w") as fh:
-            json.dump(self.anim_data, fh, indent=4)
+            json.dump(self.anim_data, fh, indent=indent)
             fh.close()
 
     def list(self):
@@ -44,6 +44,7 @@ class AnimationCreator:
             "effect" : effect,
             "colors" : colors
         }
+        return settings
 
     def get_clr_wheel_settings(self):
         colors = []
@@ -64,7 +65,7 @@ class AnimationCreator:
         effect = settings["effect"]
         clr_wheel = ColorWheel(settings["colors"])
         if effect == "0":
-            return Switch.Switch0(self.num_leds, clr_wheel)
+            return Switch.Switch0(self.num_leds, clr_wheel, settings=settings)
         else:
             print("Invalid animation settings")
 

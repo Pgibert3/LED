@@ -6,8 +6,8 @@ import time
 import matplotlib.pyplot as plt
 
 class Spectrum:
-	def __init__(self, anim_conn, brain_conn, sr=44100, frame_size=2048, hop=512):
-		self.anim_conn = anim_conn
+	def __init__(self, disp_conn, brain_conn, sr=44100, frame_size=2048, hop=512):
+		self.disp_conn = disp_conn
 		self.brain_conn = brain_conn
 
 		self.sr = sr
@@ -132,9 +132,9 @@ class Spectrum:
 			data = {
 					"onset" : peak,
 					"amplitude" : onset}
+
 			self.send_data(data)
 
-
 	def send_data(self, data):
-		self.anim_conn.send(data)
+		self.disp_conn.send(data)
 		#self.brain_conn.send(data)
