@@ -27,6 +27,7 @@ class Brain:
 		self.disp_pr = Process(target=disp.start)
 
 	def start(self):
+		self.seed()
 		if __name__ == "__main__":
 			self.spec_pr.start()
 			self.disp_pr.start()
@@ -39,8 +40,13 @@ class Brain:
 					self.spec_pr.join()
 					self.disp_pr.join()
 					break
-
+	
+	def seed(self):
+		seed = int(time.time())
+		print("seeding brain with {}...".format(seed))
+		np.random.seed(seed=seed)
+		
 	def get_random(self, ptrs):
 		i = np.random.randint(0, len(ptrs))
-		print(i)
 		return ptrs[i]
+	

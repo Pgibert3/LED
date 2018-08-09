@@ -9,9 +9,10 @@ class DisplayControl():
 
 	def start(self):
 		while True:
-			# if self.brain_conn.poll():
-			# 	anim = self.brain_conn.recv()
-			# 	print("recieved value from brain")
+			if self.brain_conn.poll():
+				anim = self.brain_conn.recv()
+				print("recieved {} from brain".format(anim))
 			if self.spec_conn.poll():
 				aud_data = self.spec_conn.recv()
-				# anim.next(aud_data)
+				print(aud_data["onset"])
+				anim.next(aud_data)

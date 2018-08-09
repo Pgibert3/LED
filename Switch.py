@@ -13,7 +13,7 @@ class Switch(Animation):
 			self.trigger()
 		else:
 			self.hold()
-		self.show_frame()
+		self.show()
 
 	def trigger(self):
 		pass
@@ -28,7 +28,7 @@ class Switch0(Switch):
 
 	def trigger(self):
 		color = self.clr_wheel.next_color()
-		led[0:self.num_leds] = color
+		self.leds[0:self.num_leds] = color
 
 	def hold(self):
 		pass
