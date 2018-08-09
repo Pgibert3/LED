@@ -1,5 +1,5 @@
 from Animation import Animation
-
+import numpy as np
 
 class Switch(Animation):
 	def __init__(self, num_leds, clr_wheel, settings={}):
@@ -13,13 +13,13 @@ class Switch(Animation):
 			self.trigger()
 		else:
 			self.hold()
-		self.show()
 
 	def trigger(self):
 		pass
 
 	def hold(self):
 		pass
+
 
 class Switch0(Switch):
 	#Flat color switch
@@ -28,7 +28,7 @@ class Switch0(Switch):
 
 	def trigger(self):
 		color = self.clr_wheel.next_color()
-		self.leds[0:self.num_leds] = color
+		self.leds[0:self.num_leds] = np.append(color, 15)
 
 	def hold(self):
 		pass

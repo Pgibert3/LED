@@ -2,13 +2,13 @@ import spidev
 import numpy as np
 
 class StripControl:
-	def __init__(self, num_leds, speed=3000000):
+	def __init__(self, num_leds, speed=2000000):
 		self.num_leds = num_leds
 		sof = [0x00]*4
 		ledf_lv = [0xFF]
 		ledf_clrs = [0x00]*3
 		ledf = ledf_lv + ledf_clrs
-		self.num_byts_eof = int(np.ceil(self.num_leds / 4)) 
+		self.num_byts_eof = int(np.ceil(self.num_leds / 4))
 		eof = [0xFF]*self.num_byts_eof
 		self.data = np.array(sof + ledf*self.num_leds + eof)
 		self.spi = spidev.SpiDev()

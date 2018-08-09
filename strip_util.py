@@ -1,10 +1,10 @@
-import strip_control
+from StripControl import StripControl
 import time
 import numpy as np
 
 
 NUM_LEDS = 60
-control = strip_control.StripControl(NUM_LEDS)
+control = StripControl(NUM_LEDS)
 
 
 def fill(color):
