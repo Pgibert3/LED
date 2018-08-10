@@ -5,6 +5,8 @@ class ColorWheel:
 	def __init__(self, colors):
 		self.pos = 0
 		self.colors = colors
+		self.BLACK = [0, 0, 0]
+		self.WHITE = [255, 255, 255]
 
 	def get_color(self):
 		return self.colors[self.pos]
