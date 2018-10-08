@@ -1,0 +1,44 @@
+{
+    "globalFields": [
+        {"name": "AnimName", "label": "Name", "type": "text"},
+        {"name": "AnimType", "label": "Type", "type": "animTypeSelect"},
+        {"name": "AnimSubtype", "label": "subtype", "type": "animSubtypeSelect"}
+    ],
+    "animTypes": {
+        "switch": {
+            "name": "switch",
+            "label": "Switch",
+            "subtypes": {
+                "switch0": {
+                    "name": "switch0",
+                    "label": "Switch0",
+                    "fields": [
+                        {"name": "colorWheel", "label": "Color Wheel", "type": "colorWheel"}
+                    ]
+                },
+                "switch1": {
+                    "name": "switch1",
+                    "label": "Switch1",
+                    "fields": [
+                        {"name": "colorWheel", "label": "Color Wheel", "type": "colorWheel"}
+                    ]
+                }
+            }
+        },
+        "push": {
+            "name": "push",
+            "label": "Push",
+            "subtypes": {
+                "push0": {
+                    "name": "push0",
+                    "label": "Push0",
+                    "fields": [
+                        {"name": "speed", "label": "Speed", "type": "number", "range":[0, 5]},
+                        {"name": "origin", "label": "Origin", "type": "select", "values":["start", "end"]},
+                        {"name": "colorWheel", "label": "Color Wheel", "type": "colorWheel"}
+                    ]
+                }
+            }
+        }
+    }
+}

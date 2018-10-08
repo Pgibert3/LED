@@ -1,6 +1,7 @@
 import json
 import Switch
-from ColorWheel import ColorWheel
+import Push
+from Wheel import ColorWheel, LVWheel
 
 class AnimationCreator:
     def __init__(self, num_leds, fname="animation_data.json"):
@@ -36,14 +37,45 @@ class AnimationCreator:
         #TODO: add error checking
         name = input("name: ")
         type = input("type: ")
-        effect = input("effect: ")
-        colors = self.get_clr_wheel_settings()
-        settings = {
-            "name" : name,
-            "type" : type,
-            "effect" : effect,
-            "colors" : colors
-        }
+        if type == "Switch":
+            effect = input("effect: ")
+            if effect == "0":
+                colors = self.get_clr_wheel_settings()
+                lvs = self.get_lv_wheel_settings()
+                settings = {
+                    "name" : name,
+                    "type" : type,
+                    "effect" : effect,
+                    "colors" : colors,
+                    "lvs" : lvs
+                }
+            else:
+                print("Invalid settings")
+                return
+        elif type == "Push":
+            effect = input("effect: ")
+            if effect == "0":
+                fr = input("frames per clock: ")
+                length = input("length: ")
+                origin = input("origin: ")
+                colors = self.get_clr_wheel_settings()
+                lvs = self.get_lv_wheel_settings()
+                settings = {
+                    "name" : name,
+                    "type" : type,
+                    "effect" : effect,
+                    "fr" : fr,
+                    "origin": origin,
+                    "length": length,
+                    "colors" : colors,
+                    "lvs" : lvs
+                }
+            else:
+                print("Invalid settings")
+                return
+        else:
+            print("Invalid settings")
+            return
         return settings
 
     def get_clr_wheel_settings(self):
@@ -60,12 +92,37 @@ class AnimationCreator:
             rsp = input("Add another Color? (y/n): ")
         return colors
 
+    def get_lv_wheel_settings(self):
+        lvs = []
+        rsp = input("Add lv? (y/n): ")
+        while rsp == "y":
+            lv = int(input("lv value: "))
+            if lv < 0 or lv > 32:
+                print("invalid lv value")
+            else:
+                lvs.append([lv])
+            rsp = input("Add another lv? (y/n): ")
+        return lvs
+
     def create_switch(self, settings):
         #TODO: add better error checking
         effect = settings["effect"]
         clr_wheel = ColorWheel(settings["colors"])
         if effect == "0":
-            return Switch.Switch0(self.num_leds, clr_wheel, settings=settings)
+            return Switch.Switch0(self.num_leds, clr_wheel)
+        else:
+            print("Invalid animation settings")
+
+    def create_push(self, settings):
+        #TODO: add better error checking
+        effect = settings["effect"]
+        fr = settings["fr"]
+        length = settings["length"]
+        origin = settings["origin"]
+        clr_wheel = ColorWheel(settings["colors"])
+        lv_wheel = LVWheel(settings["lvs"])
+        if effect == "0":
+            return Push.Push0(self.num_leds, fr, length, origin, clr_wheel, lv_wheel)
         else:
             print("Invalid animation settings")
 
@@ -76,6 +133,10 @@ class AnimationCreator:
             if self.anim_data["animations"][i]["type"] == "Switch":
                 settings = self.anim_data["animations"][i]
                 anim = self.create_switch(settings)
+                anims.append(anim)
+            elif self.anim_data["animations"][i]["type"] == "Push":
+                settings = self.anim_data["animations"][i]
+                anim = self.create_push(settings)
                 anims.append(anim)
             else:
                 print("Did not find any valid animations")
