@@ -1,8 +1,8 @@
 import numpy as np
 import pyaudio
 from librosa import amplitude_to_db
-
 from Exceptions import AudioStreamException
+import ProcessingConfig as config
 
 class InputInterface:
 	"""Interfaces the pyaudio object and stream to read in raw audio data
@@ -14,15 +14,15 @@ class InputInterface:
 		p -- pyaudio object for audio input
 		stream -- auydio stream
 	"""
-	def __init__(self, sr=44100, frame_size=2048, hop_length=512):
-		self.sr = sr
-		self.hop_length = hop_length
-		self.frame = np.zeros(frame_size)
+	def __init__(self):
+		self.sr = config.input_settings['sr']
+		self.hop_length = config.input_settings['hop_length']
+		self.frame = np.zeros(config.input_settings['frame_size'])
 		self.p = pyaudio.PyAudio()
 		self.stream = None
 
 	#Starts the audio stream
-	def start_stream(self):
+	def open_stream(self):
 		if (self.stream is None):
 			self.stream = self.p.open(
 					input = True, #set mode of stream to input
@@ -38,7 +38,7 @@ class InputInterface:
 			)
 
 	#Terminates the stream by terminating port audio and setting stream and p to None
-	def stop_stream(self):
+	def close_stream(self):
 		if (self.stream is not None):
 			self.stream.stop_stream()
 			self.stream.close()

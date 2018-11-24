@@ -4,14 +4,16 @@ project = {
     "SAMPLE_RATE" : 44100 #Sample rate of project
 }
 
-input = {
-    "FRAME_SIZE" : 2048, #Total samples per frame
-    "HOP_LENGTH" : 512 #How many new samples to read into a frame
+input_settings = {
+        "sr" : 44100,
+        "frame_size" : 2048,
+        "hop_length" : 512,
 }
 
-extractor = {
-    "N_FFT" : 2048, #Total frames per analysis buffer for feature of onset_strength_multi()
-    "HOP_LENGTH" : 512, #New frames read in per analysis buffer. See N_FFT
-    "OSS_CHANNELS" : [0, 4, 32, 64, 128],
-    "OSS_BUFF_LENGTH" : 2500
+extractor_settings = {
+        "channels" : [0,16,32,128],
+        "sr" : 44100,
+        "hop_length" : 512,
+        "n_fft" : 2048,
+        "oss_buff_length" : 2500,
 }

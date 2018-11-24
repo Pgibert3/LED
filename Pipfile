@@ -11,6 +11,7 @@ librosa = "*"
 setuptools = "*"
 pylint = "*"
 pygame = "*"
+pebble = "*"
 
 [dev-packages]
 
