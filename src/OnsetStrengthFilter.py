@@ -19,30 +19,30 @@ class OnsetStrengthFilter:
             TODO: num_subbands must be > 0. This condition is not checked for
     """
 
-    def __init__(self, _sr, _hop_length, _os_buffer_size, _n_fft, _n_mels, _num_subbands):
+    def __init__(self, sr, hop_length, os_buffer_size, n_fft, n_mels, num_subbands):
         """
         Takes audio data from a backend source and converts it to onset strength data
-        @param _sr: sampling rate
-        @type _sr: int
-        @param _hop_length: number of new onset strength frames to read into the onset strength buffer
-        @type _hop_length: int
-        @param _os_buffer_size: size of the onset strength buffer
-        @type _os_buffer_size: int
-        @param _n_fft: number of bins to calculate when computing fft
-        @type _n_fft: int
-        @param _n_mels: number of bins to compute when calculating melspectrogram
-        @type _n_mels: int
-        @param _num_subbands: final subband count of onset strength data computed
-        @type _num_subbands: int
+        @param sr: sampling rate
+        @type sr: int
+        @param hop_length: number of new onset strength frames to read into the onset strength buffer
+        @type hop_length: int
+        @param os_buffer_size: size of the onset strength buffer
+        @type os_buffer_size: int
+        @param n_fft: number of bins to calculate when computing fft
+        @type n_fft: int
+        @param n_mels: number of bins to compute when calculating melspectrogram
+        @type n_mels: int
+        @param num_subbands: final subband count of onset strength data computed
+        @type num_subbands: int
         """
-        self._sr = _sr
-        self._hop_length = _hop_length
-        self._n_fft = _n_fft
-        self._n_mels = _n_mels
-        self._subbands = self._get_subband_boundaries(_n_mels, _num_subbands)
+        self._sr = sr
+        self._hop_length = hop_length
+        self._n_fft = n_fft
+        self._n_mels = n_mels
+        self._subbands = self._get_subband_boundaries(n_mels, num_subbands)
 
         self._backend = AUXBackend(self._sr)  # Object for getting raw audio input
-        self._os_buffer = np.zeros((_os_buffer_size, _num_subbands))
+        self._os_buffer = np.zeros((os_buffer_size, num_subbands))
 
         # Tracked values for onset detection
         self._os_min = []  # Local min of oss_envelope per channel

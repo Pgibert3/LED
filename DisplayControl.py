@@ -16,9 +16,9 @@ class DisplayControl():
 			pass
 		anim = self.brain_conn.recv()
 		frame = anim.get_frame()
-		self.strip_ctl.start() #Edited for VStrip!!!!!
+		self.strip_ctl.start()  # Edited for VStrip!!!!!
 		while True:
-			self.strip_ctl.check_closed() # Edited for VStrip!!!!
+			self.strip_ctl.check_closed()  # Edited for VStrip!!!!
 			if self.brain_conn.poll():
 				anim = self.brain_conn.recv()
 				anim.set_frame(frame)
