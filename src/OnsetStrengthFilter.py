@@ -42,32 +42,73 @@ class OnsetStrengthFilter:
         self._subbands = self._get_subband_boundaries(n_mels, num_subbands)
 
         self._backend = AUXBackend(self._sr)  # Object for getting raw audio input
-        self._os_buffer = np.zeros((os_buffer_size, num_subbands))
+        self._os_bands_buffer = np.zeros((os_buffer_size, num_subbands))
 
         # Tracked values for onset detection
         self._os_min = []  # Local min of oss_envelope per channel
         self._os_max = []  # Local max of oss_envelope per channel
 
+        self.pk_delay = 0  # tracked in _is_os_peak()
+
     def next_os_all_bands(self):
         """
         Gets an audio frame from the backend, calculates the onset strength subbands, then stores and returns the result
         @return: onset strength subbands
-        @rtype: np.array((self._num_subbands, 1), dtype=np.float32)
+        @rtype: np.array((1, self._num_subbands), dtype=np.float32)
         """
         frame = self._backend.next_frame()
-        os = self._get_os(frame, self._n_mels)
-        self._store_os(os)
-        return os
+        os_bands = self._get_os(frame, self._n_mels)
+        self._store_os(os_bands)
+        return os_bands.flatten()  # strips off a bracket layer
 
-    def _store_os(self, os):
+    def is_os_peak(self, os_bands, hist=6, wait=1, th=.7):
+        # TODO: Extract kwargs
+        """
+        Returns true if provided onset strength is a peak in the os_bands_buffer
+        @param os_bands: a frame of onset strength subbands
+        @type os_bands: np.array(self._num_subbands, dtype=np.float32)
+        @param hist: number of most recent past onset strength values to consider in peak detection
+        @type hist: int
+        @param wait: minimum cycles until the next peak can be detected
+        @type wait: int
+        @param th: an additional threshold for comparing to recent onset strength average
+        @type th: double
+        @return: an array of Booleans, each element true if os of subband is a peak in the os_bands_buffer
+        @rtype: np.array(self._num_subbands), dtype=np.float32)
+        """
+        if np.shape(self._os_bands_buffer)[0] + 1 < hist:  # Ensure there are enough onset strengths in the subbands
+            os_bands.fill(False)
+            return os_bands
+        else:
+            # TODO: Optimize the following searches for max and min.
+            # TODO: Maybe store max and min and only check the first element?
+            # The calculations for prev_max and prev_min exclude the most recent value of each subband in
+            # os_bands_buffer. This is because this function assumes that the newly gathered os value has already been
+            # appended to the os_bands_buffer.
+            prev_max = np.max(self._os_bands_buffer[-(hist // 3):-1, :], axis=0)
+            prev_avg = np.mean(self._os_bands_buffer[-hist:-1, :], axis=0)
+
+            if self.pk_delay > 0:
+                self.pk_delay -= 1
+                os_bands.fill(False)
+                return os_bands
+
+            max_check = os_bands > prev_max
+            avg_check = os_bands > prev_avg + th
+            peaks = np.logical_and(max_check, avg_check)
+            self.pk_delay = wait
+            return peaks
+
+    def _store_os(self, os_bands):
         """
         Stores the provided array of onset strength signals in the oss_buffer
-        @param os: a frame of onset strength subbands
-        @type os: np.array((self._num_subbands, 1), dtype=np.float32)
+        @param os_bands: a frame of onset strength subbands
+        @type os_bands: np.array((1, self._num_subbands), dtype=np.float32)
         """
-        self._os_buffer = np.delete(self._os_buffer, 0, axis=0)
-        self._os_buffer = np.append(self._os_buffer, os, axis=0)
+        self._os_bands_buffer = np.delete(self._os_bands_buffer, 0, axis=0)
+        self._os_bands_buffer = np.append(self._os_bands_buffer, os_bands, axis=0)
 
+    # TODO: Figure out melspectrogram bin warning
     def _get_os(self, frame, n_mels):
         """
         Computes the onset strength subbands of a frame
@@ -98,9 +139,9 @@ class OnsetStrengthFilter:
         @return: normalized onset strength subbands
         @rtype: nd.array((self._num_subbands, 1), dtype=np.float32)
         """
-        os_min = np.min(self._os_buffer, axis=0)
-        os_max = np.min(self._os_buffer, axis=0)
-        os_std = np.std(self._os_buffer, axis=0)
+        os_min = np.min(self._os_bands_buffer, axis=0)
+        os_max = np.min(self._os_bands_buffer, axis=0)
+        os_std = np.std(self._os_bands_buffer, axis=0)
         # Filter for erroneous data
         os_min = np.max([np.zeros(len(os_min)), os_min], axis=0)
         os_max[os_max <= 0] = 1
