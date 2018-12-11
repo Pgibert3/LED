@@ -54,14 +54,14 @@ class OnsetStrengthFilter:
         """
         Gets an audio frame from the backend, calculates the onset strength subbands, then stores and returns the result
         @return: onset strength subbands
-        @rtype: np.array((1, self._num_subbands), dtype=np.float32)
+        @rtype: np.array(self._num_subbands, dtype=np.float32)
         """
         frame = self._backend.next_frame()
         os_bands = self._get_os(frame, self._n_mels)
         self._store_os(os_bands)
         return os_bands.flatten()  # strips off a bracket layer
 
-    def is_os_peak(self, os_bands, hist=6, wait=1, th=.7):
+    def is_os_peak(self, os_bands, hist=6, wait=1, th=.7, debug=False):
         # TODO: Extract kwargs
         """
         Returns true if provided onset strength is a peak in the os_bands_buffer
@@ -72,12 +72,18 @@ class OnsetStrengthFilter:
         @param wait: minimum cycles until the next peak can be detected
         @type wait: int
         @param th: an additional threshold for comparing to recent onset strength average
+        @param debug: if true, outputs additional data about the execution of the function in a dictionary
+        @type debug: Boolean
         @type th: double
         @return: an array of Booleans, each element true if os of subband is a peak in the os_bands_buffer
         @rtype: np.array(self._num_subbands), dtype=np.float32)
         """
         if np.shape(self._os_bands_buffer)[0] + 1 < hist:  # Ensure there are enough onset strengths in the subbands
             os_bands.fill(False)
+
+            if debug:
+                return {"peaks": os_bands, "prev_max": np.zeros(len(os_bands)), "prev_avg": np.zeros(len(os_bands))}
+
             return os_bands
         else:
             # TODO: Optimize the following searches for max and min.
@@ -91,12 +97,20 @@ class OnsetStrengthFilter:
             if self.pk_delay > 0:
                 self.pk_delay -= 1
                 os_bands.fill(False)
+
+                if debug:
+                    return {"peaks": os_bands, "prev_max": prev_max, "prev_avg": prev_avg + th}
+
                 return os_bands
 
             max_check = os_bands > prev_max
             avg_check = os_bands > prev_avg + th
             peaks = np.logical_and(max_check, avg_check)
             self.pk_delay = wait
+
+            if debug:
+                return {"peaks": peaks, "prev_max": prev_max, "prev_avg": prev_avg + th}
+
             return peaks
 
     def _store_os(self, os_bands):
